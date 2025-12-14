@@ -50,7 +50,7 @@ jobs:
         run: |
           aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEFINITION_FAMILY }} \
           --query taskDefinition \
-          | jq 'del(.taskDefinitionArn) | del(.requiresAttributes) | del(.revision) | del(.status) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)' > task-definition.json
+          | jq 'del(.taskDefinitionArn) | del(.requiresAttributes) | del(.revision) | del(.status) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy) | del(.enableFaultInjection)' > task-definition.json
       # 6. Fill in the new image ID in the task definition
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
