@@ -91,14 +91,24 @@ def get_conversation_history(db: Session, conversation_id: str, limit: int = 10,
         db: Database session
         conversation_id: The conversation ID to retrieve history for
         limit: Maximum number of messages to retrieve (default: 10)
-        agent_type: Optional filter by agent type ('patient' or 'clinical') for isolation
+        agent_type: Filter by agent type ('patient' or 'clinical') for isolation.
+                   SECURITY NOTE: Production endpoints MUST provide this parameter
+                   to ensure proper subagent isolation. Only omit for debug/admin
+                   endpoints that explicitly need to see all messages.
     
     Returns:
         List of LangChain messages (HumanMessage/AIMessage) in chronological order
+    
+    Security:
+        - Patient Concierge API MUST pass agent_type='patient'
+        - Clinical Advisor API MUST pass agent_type='clinical' (if logging is added)
+        - Admin/debug endpoints MAY omit agent_type to retrieve all messages
     """
     query = db.query(ChatLog).filter(ChatLog.conversation_id == conversation_id)
     
     # Apply agent_type filter if specified for proper subagent isolation
+    # SECURITY: When agent_type is None, ALL messages are returned regardless of agent.
+    # This is intentional for debug/admin use cases only.
     if agent_type:
         query = query.filter(ChatLog.agent_type == agent_type)
     

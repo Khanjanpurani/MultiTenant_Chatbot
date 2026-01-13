@@ -135,6 +135,13 @@ from src.models.models import ChatLog
 
 @app.get("/chat-history/{conversation_id}")
 def get_chat_history(conversation_id: str):
+    """
+    Debug endpoint: Get chat history for a conversation.
+    
+    NOTE: This debug endpoint retrieves ALL messages regardless of agent_type
+    for administrative/debugging purposes. Production endpoints should always
+    filter by agent_type for proper isolation.
+    """
     db = next(get_db())
     history = get_conversation_history(db, conversation_id)
     db.close()
