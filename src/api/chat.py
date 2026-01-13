@@ -43,9 +43,9 @@ async def handle_chat_message(request: ChatRequest, db: Session = Depends(get_db
     """
     conversation_id = request.conversation_id or uuid.uuid4()
 
-    conversation = state_manager.load_or_create_conversation(db, conversation_id, request.client_id)
-    history = state_manager.get_conversation_history(db, conversation_id)
-    state_manager.log_message(db, conversation_id, 'user', request.message)
+    conversation = state_manager.load_or_create_conversation(db, conversation_id, request.client_id, agent_type='patient')
+    history = state_manager.get_conversation_history(db, conversation_id, agent_type='patient')
+    state_manager.log_message(db, conversation_id, 'user', request.message, agent_type='patient')
 
     context = ""
     if conversation.current_stage in ['GREETING', 'ANSWERING_QUESTION']:
@@ -92,6 +92,6 @@ async def handle_chat_message(request: ChatRequest, db: Session = Depends(get_db
         )
         logger.info(f"Finished finalizing conversation and routing webhook.", extra={'conversation_id': str(conversation_id), 'client_id': request.client_id})
 
-    state_manager.log_message(db, conversation_id, 'bot', response_text)
+    state_manager.log_message(db, conversation_id, 'bot', response_text, agent_type='patient')
 
     return ChatResponse(conversation_id=conversation_id, response=response_text)

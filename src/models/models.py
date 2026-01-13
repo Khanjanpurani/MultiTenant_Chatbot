@@ -29,6 +29,7 @@ class Conversation(Base):
     last_activity_at = Column(DateTime, default=datetime.datetime.utcnow)
     is_finalized = Column(Boolean, default=False, nullable=False)
     finalized_at = Column(DateTime, nullable=True)
+    agent_type = Column(String(20), nullable=False, default='patient')  # 'patient' or 'clinical'
 
 class ChatLog(Base):
     __tablename__ = 'chat_logs'
@@ -38,6 +39,7 @@ class ChatLog(Base):
     message = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     response_time_ms = Column(Integer, nullable=True)
+    agent_type = Column(String(20), nullable=False, default='patient')  # 'patient' or 'clinical'
 
 class WebhookAttempt(Base):
     __tablename__ = 'webhook_attempts'

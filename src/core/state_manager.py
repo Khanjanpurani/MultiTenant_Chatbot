@@ -46,7 +46,7 @@ def finalize_conversation(db: Session, conversation_id: str):
         db.rollback()
         return False
 
-def load_or_create_conversation(db: Session, conversation_id: str, client_id: str):
+def load_or_create_conversation(db: Session, conversation_id: str, client_id: str, agent_type: str = 'patient'):
     conversation = db.query(Conversation).filter(Conversation.conversation_id == conversation_id).first()
     if not conversation:
         conversation = Conversation(
@@ -62,7 +62,8 @@ def load_or_create_conversation(db: Session, conversation_id: str, client_id: st
                 'last_visit': None,
                 'preferred_date': None,
                 'preferred_time': None
-            }
+            },
+            agent_type=agent_type
         )
         db.add(conversation)
         db.commit()
@@ -82,8 +83,26 @@ def save_state(db: Session, conversation_id: str, stage: str, state: dict):
         db.commit()
         logger.info(f"Saved state for conversation {conversation_id}", extra={'conversation_id': conversation_id})
 
-def get_conversation_history(db: Session, conversation_id: str, limit: int = 10):
-    logs = db.query(ChatLog).filter(ChatLog.conversation_id == conversation_id).order_by(ChatLog.created_at.desc()).limit(limit).all()
+def get_conversation_history(db: Session, conversation_id: str, limit: int = 10, agent_type: str = None):
+    """
+    Retrieve conversation history for a specific conversation.
+    
+    Args:
+        db: Database session
+        conversation_id: The conversation ID to retrieve history for
+        limit: Maximum number of messages to retrieve (default: 10)
+        agent_type: Optional filter by agent type ('patient' or 'clinical') for isolation
+    
+    Returns:
+        List of LangChain messages (HumanMessage/AIMessage) in chronological order
+    """
+    query = db.query(ChatLog).filter(ChatLog.conversation_id == conversation_id)
+    
+    # Apply agent_type filter if specified for proper subagent isolation
+    if agent_type:
+        query = query.filter(ChatLog.agent_type == agent_type)
+    
+    logs = query.order_by(ChatLog.created_at.desc()).limit(limit).all()
     history = []
     for log in reversed(logs): # reverse to get chronological order
         if log.sender_type == 'user':
@@ -92,11 +111,22 @@ def get_conversation_history(db: Session, conversation_id: str, limit: int = 10)
             history.append(AIMessage(content=log.message))
     return history
 
-def log_message(db: Session, conversation_id: str, sender: str, message: str):
+def log_message(db: Session, conversation_id: str, sender: str, message: str, agent_type: str = 'patient'):
+    """
+    Log a message in the chat_logs table.
+    
+    Args:
+        db: Database session
+        conversation_id: The conversation ID
+        sender: 'user' or 'bot'
+        message: The message content
+        agent_type: 'patient' or 'clinical' for proper subagent isolation
+    """
     log = ChatLog(
         conversation_id=conversation_id,
         sender_type=sender,
-        message=message
+        message=message,
+        agent_type=agent_type
     )
     db.add(log)
     db.commit()
